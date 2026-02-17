@@ -1,0 +1,1974 @@
+<!DOCTYPE html>
+<html lang="pt" data-theme="light">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<meta name="theme-color" content="#2e7d32" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="description" content="Sistema completo de gestão para mercearias com Ponto de Venda, controle de stock e relatórios" />
+
+<title>Mercearia Gestão Pro</title>
+
+<!-- PWA Manifest -->
+<link rel="manifest" href="data:application/json;base64,eyJuYW1lIjogIk1lcmNlYXJpYSBHZXN0w6NvIFBybyIsICJzaG9ydF9uYW1lIjogIk1lcmNlYXJpYSIsICJzdGFydF91cmwiOiAiLi8iLCAiZGlzcGxheSI6ICJzdGFuZGFsb25lIiwgImJhY2tncm91bmRfY29sb3IiOiAiI2Y0ZjRmNCIsICJ0aGVtZV9jb2xvciI6ICIjMmU3ZDMyIiwgImljb25zIjogW3sic3JjIjogImRhdGE6aW1hZ2Uvc3ZnK3htbDtiYXNlNjQsUEhOMlp5QjNhV1IwYUQwaU1qQXlNQ0lnYUdWcFoyaDBQU0l5TURJd0lpQjBjbUZ1YzJGamRHbHZiajBpTVM0d0lpQjJhV1YzUW05NFBTSXdJajQ4YzNSNWJHVStQSEJoZEdnZ1ptbHNiRDBpSXpJd01EQWlJR1p2Ym5SbGJuUmxQU0l3SWlCemRIbHNaVDBpYm05dVpTSWdjM1I1YkdVOUltTnZiWEJzWlNJZ2MzUjViR1UrUEhCaGRHZ2dabWxzYkQwaUl6SXdNREFpSUdadmJuUmxiblJsUFNJd0lpQnpkSGxzWlQwaWJtOXVaU0lnYzNSNWJHVStQSEJoZEdnZ1ptbHNiRDBpSXpJd01EQWlJR1p2Ym5SbGJuUmxQU0l3SWlCemRIbHNaVDBpYm05dVpTSWdjM1I1YkdVOVBDOXpkSGxzWlQ0OEwzTjBlV3hsUGc9PSIsICJzaXplcyI6ICIxOTJ4MTkyIiwgInR5cGUiOiAiaW1hZ2Uvc3ZnK3htbCJ9XX0=" />
+
+<!-- Bibliotecas externas com fallback -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="https://unpkg.com/dexie@3.2.4/dist/dexie.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<style>
+:root {
+  --primary: #2e7d32;
+  --primary-dark: #1b5e20;
+  --primary-light: #4caf50;
+  --accent: #ff9800;
+  --danger: #d32f2f;
+  --success: #388e3c;
+  --bg: #f5f5f5;
+  --surface: #ffffff;
+  --text: #212121;
+  --text-secondary: #757575;
+  --border: #e0e0e0;
+  --shadow: 0 2px 8px rgba(0,0,0,0.1);
+  --radius: 12px;
+  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+[data-theme="dark"] {
+  --bg: #121212;
+  --surface: #1e1e1e;
+  --text: #ffffff;
+  --text-secondary: #b0b0b0;
+  --border: #333333;
+  --shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  overflow-x: hidden;
+  transition: var(--transition);
+}
+
+/* Header Moderno */
+.app-header {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  color: white;
+  padding: 1rem;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(10px);
+}
+
+.header-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.app-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.app-title::before {
+  content: "🛒";
+  font-size: 1.8rem;
+}
+
+/* Navegação Inferior (Mobile-First) */
+.nav-bottom {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--surface);
+  display: flex;
+  justify-content: space-around;
+  padding: 0.5rem 0;
+  box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+  z-index: 1000;
+  border-top: 1px solid var(--border);
+}
+
+.nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.5rem;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: var(--transition);
+  border-radius: var(--radius);
+  margin: 0 0.25rem;
+}
+
+.nav-item:hover, .nav-item.active {
+  color: var(--primary);
+  background: rgba(46, 125, 50, 0.1);
+}
+
+.nav-item i {
+  font-size: 1.5rem;
+  margin-bottom: 0.25rem;
+}
+
+/* Navegação Desktop */
+@media (min-width: 768px) {
+  .nav-bottom {
+    position: static;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    box-shadow: var(--shadow);
+    padding: 0.5rem 1rem;
+    justify-content: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .nav-item {
+    flex-direction: row;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+  
+  .nav-item i {
+    margin-bottom: 0;
+  }
+}
+
+/* Container Principal */
+.main-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1rem;
+  padding-bottom: 80px;
+}
+
+@media (min-width: 768px) {
+  .main-container {
+    padding-bottom: 1rem;
+  }
+}
+
+/* Cards */
+.card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid var(--border);
+}
+
+.card-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+/* Formulários */
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.form-input, .form-select {
+  width: 100%;
+  padding: 0.875rem;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 1rem;
+  transition: var(--transition);
+}
+
+.form-input:focus, .form-select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.1);
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+/* Botões */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.875rem 1.5rem;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  color: white;
+  box-shadow: 0 4px 6px rgba(46, 125, 50, 0.3);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(46, 125, 50, 0.4);
+}
+
+.btn-secondary {
+  background: var(--surface);
+  color: var(--primary);
+  border: 2px solid var(--primary);
+}
+
+.btn-danger {
+  background: linear-gradient(135deg, var(--danger) 0%, #b71c1c 100%);
+  color: white;
+}
+
+.btn-success {
+  background: linear-gradient(135deg, var(--success) 0%, var(--primary-dark) 100%);
+  color: white;
+}
+
+.btn-icon {
+  padding: 0.5rem;
+  border-radius: 50%;
+  min-width: 40px;
+  min-height: 40px;
+}
+
+/* Tabelas */
+.table-container {
+  overflow-x: auto;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.data-table th {
+  background: var(--primary);
+  color: white;
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  letter-spacing: 0.5px;
+  position: sticky;
+  top: 0;
+}
+
+.data-table td {
+  padding: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.data-table tr:hover {
+  background: rgba(46, 125, 50, 0.05);
+}
+
+.data-table tr:last-child td {
+  border-bottom: none;
+}
+
+/* Badges */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.badge-success { background: #e8f5e9; color: var(--success); }
+.badge-warning { background: #fff3e0; color: #f57c00; }
+.badge-danger { background: #ffebee; color: var(--danger); }
+
+/* Dashboard Stats */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.stat-card {
+  background: var(--surface);
+  padding: 1.5rem;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  border-left: 4px solid var(--primary);
+  transition: var(--transition);
+}
+
+.stat-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+}
+
+.stat-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--primary);
+  margin: 0.5rem 0;
+}
+
+.stat-label {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Toast Notifications */
+.toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.toast {
+  background: var(--surface);
+  color: var(--text);
+  padding: 1rem 1.5rem;
+  border-radius: var(--radius);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  animation: slideInRight 0.3s ease;
+  border-left: 4px solid var(--primary);
+  max-width: 350px;
+}
+
+.toast.success { border-left-color: var(--success); }
+.toast.error { border-left-color: var(--danger); }
+.toast.warning { border-left-color: var(--accent); }
+
+@keyframes slideInRight {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  opacity: 0;
+  visibility: hidden;
+  transition: var(--transition);
+}
+
+.modal-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.modal-content {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 2rem;
+  max-width: 500px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  transform: scale(0.9);
+  transition: var(--transition);
+}
+
+.modal-overlay.active .modal-content {
+  transform: scale(1);
+}
+
+/* Search & Filter */
+.search-box {
+  position: relative;
+  margin-bottom: 1rem;
+}
+
+.search-box input {
+  padding-left: 2.5rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23757575' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'%3E%3C/circle%3E%3Cpath d='m21 21-4.35-4.35'%3E%3C/path%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: 0.75rem center;
+}
+
+/* QR Reader */
+.qr-container {
+  position: relative;
+  background: #000;
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin: 1rem 0;
+}
+
+.qr-overlay {
+  position: absolute;
+  inset: 0;
+  border: 2px solid var(--primary);
+  border-radius: var(--radius);
+  pointer-events: none;
+}
+
+.qr-corner {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border: 3px solid var(--primary);
+}
+
+.qr-corner.tl { top: 10px; left: 10px; border-right: none; border-bottom: none; }
+.qr-corner.tr { top: 10px; right: 10px; border-left: none; border-bottom: none; }
+.qr-corner.bl { bottom: 10px; left: 10px; border-right: none; border-top: none; }
+.qr-corner.br { bottom: 10px; right: 10px; border-left: none; border-top: none; }
+
+/* Carrinho */
+.cart-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background: var(--bg);
+  border-radius: var(--radius);
+  margin-bottom: 0.5rem;
+  border: 1px solid var(--border);
+}
+
+.cart-item-info {
+  flex: 1;
+}
+
+.cart-item-name {
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.cart-item-details {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.cart-item-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.qty-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  transition: var(--transition);
+}
+
+.qty-btn:hover {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+/* Print Styles */
+@media print {
+  .no-print { display: none !important; }
+  body { background: white; }
+  .card { box-shadow: none; border: 1px solid #ddd; }
+}
+
+/* Loading Spinner */
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid var(--border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Toggle Switch */
+.toggle-switch {
+  position: relative;
+  width: 50px;
+  height: 26px;
+  background: var(--border);
+  border-radius: 13px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.toggle-switch.active {
+  background: var(--primary);
+}
+
+.toggle-switch::after {
+  content: '';
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  background: white;
+  border-radius: 50%;
+  top: 2px;
+  left: 2px;
+  transition: var(--transition);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.toggle-switch.active::after {
+  left: 26px;
+}
+
+/* Install Prompt */
+.install-prompt {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--primary);
+  color: white;
+  padding: 1rem 1.5rem;
+  border-radius: var(--radius);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  z-index: 1500;
+  animation: bounceIn 0.5s ease;
+}
+
+@keyframes bounceIn {
+  0% { transform: translateX(-50%) scale(0); }
+  50% { transform: translateX(-50%) scale(1.1); }
+  100% { transform: translateX(-50%) scale(1); }
+}
+
+.hidden { display: none !important; }
+
+/* Responsive adjustments */
+@media (max-width: 480px) {
+  .stats-grid { grid-template-columns: 1fr; }
+  .form-row { grid-template-columns: 1fr; }
+  .card { padding: 1rem; }
+  .app-title { font-size: 1.2rem; }
+}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="app-header no-print">
+  <div class="header-content">
+    <div class="app-title">Mercearia Gestão Pro</div>
+    <div style="display:flex;gap:0.5rem;align-items:center;">
+      <button class="btn btn-icon" onclick="toggleTheme()" title="Alternar Tema">🌓</button>
+      <button class="btn btn-icon" onclick="showBackupModal()" title="Backup">💾</button>
+      <button class="btn btn-icon" onclick="showSettings()" title="Configurações">⚙️</button>
+    </div>
+  </div>
+</header>
+
+<!-- Navegação -->
+<nav class="nav-bottom no-print">
+  <button class="nav-item active" onclick="showPage('venda')" data-page="venda">
+    <span>🛍️</span>
+    <span>Venda</span>
+  </button>
+  <button class="nav-item" onclick="showPage('dashboard')" data-page="dashboard">
+    <span>📊</span>
+    <span>Resumo</span>
+  </button>
+  <button class="nav-item" onclick="showPage('prod')" data-page="prod">
+    <span>📦</span>
+    <span>Produtos</span>
+  </button>
+  <button class="nav-item" onclick="showPage('cat')" data-page="cat">
+    <span>🏷️</span>
+    <span>Categorias</span>
+  </button>
+  <button class="nav-item" onclick="showPage('rel')" data-page="rel">
+    <span>📈</span>
+    <span>Relatórios</span>
+  </button>
+</nav>
+
+<!-- Container Principal -->
+<main class="main-container">
+
+  <!-- PÁGINA: DASHBOARD -->
+  <section id="dashboard" class="page hidden">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Vendas Hoje</div>
+        <div class="stat-value" id="dash_vendas_hoje">0 Mts</div>
+        <div style="font-size:0.85rem;color:var(--success);">↑ 12% vs ontem</div>
+      </div>
+      <div class="stat-card" style="border-left-color: var(--accent);">
+        <div class="stat-label">Lucro Hoje</div>
+        <div class="stat-value" id="dash_lucro_hoje">0 Mts</div>
+      </div>
+      <div class="stat-card" style="border-left-color: var(--danger);">
+        <div class="stat-label">Produtos Baixo Stock</div>
+        <div class="stat-value" id="dash_stock_baixo">0</div>
+      </div>
+      <div class="stat-card" style="border-left-color: #2196f3;">
+        <div class="stat-label">Total Produtos</div>
+        <div class="stat-value" id="dash_total_prod">0</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">📈 Vendas dos Últimos 7 Dias</span>
+      </div>
+      <canvas id="chartVendas" height="100"></canvas>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">⚠️ Alertas de Stock</span>
+      </div>
+      <div id="alertas_stock"></div>
+    </div>
+  </section>
+
+  <!-- PÁGINA: PONTO DE VENDA -->
+  <section id="venda" class="page">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">🛍️ Nova Venda</span>
+        <span class="badge badge-success" id="venda_numero">#001</span>
+      </div>
+
+      <div class="search-box">
+        <input type="text" class="form-input" id="pesquisaPOS" placeholder="🔍 Pesquisar produto por nome ou código..." oninput="filtraPOS()">
+      </div>
+
+      <div class="form-row">
+        <div class="form-group" style="flex:2;">
+          <label class="form-label">Produto</label>
+          <select class="form-select" id="venda_prod" onchange="atualizarInfoProduto()">
+            <option value="">Selecione um produto...</option>
+          </select>
+        </div>
+        <div class="form-group" id="grupo_qtd">
+          <label class="form-label" id="lbl_qtd">Quantidade</label>
+          <div style="display:flex;gap:0.5rem;align-items:center;">
+            <button class="qty-btn" onclick="ajustarQtd(-1)">−</button>
+            <input type="number" class="form-input" id="venda_qtd" value="1" step="0.001" min="0.001" style="text-align:center;width:80px;">
+            <button class="qty-btn" onclick="ajustarQtd(1)">+</button>
+          </div>
+        </div>
+        <div class="form-group" id="grupo_peso" style="display:none;">
+          <label class="form-label">Valor (Mts)</label>
+          <input type="number" class="form-input" id="valor_peso" placeholder="0.00" step="0.01">
+        </div>
+      </div>
+
+      <div style="display:flex;gap:0.5rem;margin:1rem 0;flex-wrap:wrap;">
+        <button class="btn btn-secondary" onclick="iniciarLeitor()">📷 Ler Código</button>
+        <button class="btn btn-primary" onclick="adicionarAoCarrinho()">➕ Adicionar</button>
+      </div>
+
+      <div id="qr_container" class="qr-container hidden" style="height:300px;">
+        <div id="reader"></div>
+        <div class="qr-overlay">
+          <div class="qr-corner tl"></div>
+          <div class="qr-corner tr"></div>
+          <div class="qr-corner bl"></div>
+          <div class="qr-corner br"></div>
+        </div>
+        <button class="btn btn-danger" onclick="pararLeitor()" style="position:absolute;bottom:10px;left:50%;transform:translateX(-50%);z-index:10;">✕ Fechar Câmera</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">🛒 Carrinho</span>
+        <button class="btn btn-danger btn-icon" onclick="limparCarrinho()" title="Limpar">🗑️</button>
+      </div>
+      <div id="carrinho_itens"></div>
+      
+      <div style="margin-top:1.5rem;padding-top:1rem;border-top:2px solid var(--border);">
+        <div style="display:flex;justify-content:space-between;margin-bottom:0.5rem;">
+          <span>Subtotal:</span>
+          <strong id="cart_subtotal">0.00 Mts</strong>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:0.5rem;font-size:1.1rem;">
+          <span>Total:</span>
+          <strong style="color:var(--primary);font-size:1.3rem;" id="cart_total">0.00 Mts</strong>
+        </div>
+        <div style="display:flex;justify-content:space-between;color:var(--success);">
+          <span>Lucro estimado:</span>
+          <strong id="cart_lucro">0.00 Mts</strong>
+        </div>
+      </div>
+
+      <div class="form-row" style="margin-top:1rem;">
+        <div class="form-group">
+          <label class="form-label">Valor Recebido (Mts) <small>(opcional)</small></label>
+          <input type="number" class="form-input" id="valor_recebido" placeholder="0.00" step="0.01" oninput="calcularTroco()">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Troco (Mts)</label>
+          <input type="text" class="form-input" id="valor_troco" readonly value="0.00" style="font-weight:bold;color:var(--primary);">
+        </div>
+      </div>
+
+      <!-- Botões de ação final -->
+      <div style="display:flex;gap:0.5rem;margin-top:1rem;flex-wrap:wrap;">
+        <button class="btn btn-secondary" onclick="imprimirReciboCarrinho()">🖨️ Imprimir Recibo</button>
+        <button class="btn btn-success" onclick="finalizarVenda()" style="margin-left:auto;">✅ Finalizar Venda</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- PÁGINA: PRODUTOS -->
+  <section id="prod" class="page hidden">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-label">Cadastrar / Editar Produto</span>
+        <button class="btn btn-secondary" onclick="limparFormProduto()">Novo</button>
+      </div>
+      
+      <input type="hidden" id="prod_id">
+      
+      <div class="form-row">
+        <div class="form-group" style="flex:2;">
+          <label class="form-label">Nome do Produto *</label>
+          <input type="text" class="form-input" id="prod_nome" placeholder="Ex: Arroz 5kg">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Categoria *</label>
+          <select class="form-select" id="prod_cat"></select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Preço de Compra (Mts)</label>
+          <input type="number" class="form-input" id="prod_preco_compra" placeholder="0.00" step="0.01" min="0">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Preço de Venda (Mts) *</label>
+          <input type="number" class="form-input" id="prod_preco" placeholder="0.00" step="0.01" min="0.01">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Stock Atual</label>
+          <input type="number" class="form-input" id="prod_stock" placeholder="0" step="0.001" min="0">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Código de Barras / QR</label>
+          <input type="text" class="form-input" id="prod_codigo" placeholder="Ex: 789123456789">
+        </div>
+        <div class="form-group" style="display:flex;align-items:flex-end;gap:1rem;">
+          <label class="form-label" style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;">
+            <input type="checkbox" id="prod_peso" onchange="toggleTipoVenda()">
+            <span>Vender por Peso (kg)</span>
+          </label>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:0.5rem;margin-top:1rem;">
+        <button class="btn btn-primary" onclick="salvarProduto()">💾 Salvar Produto</button>
+        <button class="btn btn-secondary" onclick="gerarCodigoBarras()">🔢 Gerar Código</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">📋 Lista de Produtos</span>
+        <div style="display:flex;gap:0.5rem;">
+          <input type="text" class="form-input" id="filtro_prod" placeholder="Filtrar..." oninput="filtrarProdutos()" style="width:200px;">
+          <button class="btn btn-secondary" onclick="exportarExcel()">📥 Excel</button>
+        </div>
+      </div>
+      <div class="table-container">
+        <table class="data-table" id="table_prod">
+          <thead>
+            <tr>
+              <th>Produto</th>
+              <th>Categoria</th>
+              <th>Preço</th>
+              <th>Stock</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- PÁGINA: CATEGORIAS -->
+  <section id="cat" class="page hidden">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">🏷️ Gerenciar Categorias</span>
+      </div>
+      
+      <div class="form-row">
+        <div class="form-group" style="flex:1;">
+          <label class="form-label">Nova Categoria</label>
+          <input type="text" class="form-input" id="cat_nome" placeholder="Nome da categoria">
+        </div>
+        <div class="form-group" style="flex:0;">
+          <label class="form-label">&nbsp;</label>
+          <button class="btn btn-primary" onclick="salvarCategoria()">➕ Adicionar</button>
+        </div>
+      </div>
+
+      <div class="table-container" style="margin-top:1rem;">
+        <table class="data-table" id="table_cat">
+          <thead>
+            <tr>
+              <th>Categoria</th>
+              <th>Produtos</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- PÁGINA: RELATÓRIOS -->
+  <section id="rel" class="page hidden">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">📊 Relatórios e Análises</span>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Período</label>
+          <select class="form-select" id="rel_periodo" onchange="gerarRelatorio()">
+            <option value="7">Últimos 7 dias</option>
+            <option value="30">Últimos 30 dias</option>
+            <option value="90">Últimos 3 meses</option>
+            <option value="custom">Personalizado</option>
+          </select>
+        </div>
+        <div class="form-group" id="grupo_data_inicio" style="display:none;">
+          <label class="form-label">Data Início</label>
+          <input type="date" class="form-input" id="rel_data_inicio">
+        </div>
+        <div class="form-group" id="grupo_data_fim" style="display:none;">
+          <label class="form-label">Data Fim</label>
+          <input type="date" class="form-input" id="rel_data_fim">
+        </div>
+        <div class="form-group" style="display:flex;align-items:flex-end;">
+          <button class="btn btn-primary" onclick="gerarRelatorio()">🔄 Atualizar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">📈 Resumo do Período</span>
+        <div>
+          <button class="btn btn-secondary" onclick="exportarRelatorioPDF()">📄 PDF</button>
+          <button class="btn btn-secondary" onclick="exportarRelatorioExcel()">📊 Excel</button>
+        </div>
+      </div>
+      <div id="relatorio_conteudo"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">🏆 Produtos Mais Vendidos</span>
+      </div>
+      <div id="ranking_produtos"></div>
+    </div>
+
+    <button class="btn btn-danger" onclick="confirmarApagarHistorico()" style="width:100%;margin-top:1rem;">
+      🗑️ Apagar Histórico de Vendas
+    </button>
+  </section>
+
+</main>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toast_container"></div>
+
+<!-- Install Prompt -->
+<div id="install_prompt" class="install-prompt hidden no-print">
+  <span>📲 Instalar app?</span>
+  <button class="btn" onclick="instalarApp()" style="background:white;color:var(--primary);">Instalar</button>
+  <button class="btn btn-icon" onclick="fecharInstallPrompt()" style="color:white;">✕</button>
+</div>
+
+<!-- Modal Backup -->
+<div id="modal_backup" class="modal-overlay" onclick="if(event.target===this)closeBackupModal()">
+  <div class="modal-content">
+    <h3>💾 Backup e Restauração</h3>
+    <p style="margin:1rem 0;color:var(--text-secondary);">Mantenha seus dados seguros exportando para arquivo.</p>
+    
+    <div style="display:flex;flex-direction:column;gap:1rem;">
+      <button class="btn btn-primary" onclick="exportarBackup()">📥 Exportar Backup (.json)</button>
+      <button class="btn btn-success" onclick="exportarExcelCompleto()">📊 Exportar Excel Completo</button>
+      
+      <hr style="border-color:var(--border);">
+      
+      <div>
+        <label class="form-label">Restaurar Backup</label>
+        <input type="file" class="form-input" id="input_backup" accept=".json" onchange="importarBackup()">
+        <small style="color:var(--danger);">⚠️ Isso substituirá todos os dados atuais!</small>
+      </div>
+    </div>
+    
+    <button class="btn btn-secondary" onclick="closeBackupModal()" style="width:100%;margin-top:1rem;">Fechar</button>
+  </div>
+</div>
+
+<script>
+// ==========================================
+// CONFIGURAÇÃO E INICIALIZAÇÃO
+// ==========================================
+
+const APP_VERSION = '2.0.0';
+let db;
+let carrinho = [];
+let deferredPrompt = null;
+let html5QrCode = null;
+
+// Inicialização do Banco de Dados Dexie
+async function initDB() {
+  db = new Dexie('MerceariaDB_Pro');
+  db.version(1).stores({
+    categorias: '++id, nome',
+    produtos: '++id, nome, categoriaId, precoCompra, preco, stock, porPeso, codigoBarras',
+    vendas: '++id, total, custoTotal, data, syncStatus',
+    itensVenda: '++id, vendaId, produtoId, qtd, precoUnit, custoUnit',
+    config: 'key, value'
+  });
+  
+  // Verificar/atualizar número da venda
+  const lastNum = await db.config.get('lastVendaNum');
+  if (!lastNum) {
+    await db.config.put({ key: 'lastVendaNum', value: 1 });
+  }
+}
+
+// ==========================================
+// NAVEGAÇÃO E UI
+// ==========================================
+
+function showPage(pageId) {
+  // Esconder todas as páginas
+  document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  
+  // Mostrar página selecionada
+  document.getElementById(pageId).classList.remove('hidden');
+  document.querySelector(`[data-page="${pageId}"]`).classList.add('active');
+  
+  // Carregar dados específicos
+  if (pageId === 'dashboard') loadDashboard();
+  if (pageId === 'venda') loadProdutosVenda();
+  if (pageId === 'prod') { loadCategoriasSelect(); listarProdutos(); }
+  if (pageId === 'cat') listarCategorias();
+  if (pageId === 'rel') gerarRelatorio();
+  
+  // Scroll to top
+  window.scrollTo(0, 0);
+}
+
+function toggleTheme() {
+  const html = document.documentElement;
+  const current = html.getAttribute('data-theme');
+  const next = current === 'light' ? 'dark' : 'light';
+  html.setAttribute('data-theme', next);
+  localStorage.setItem('theme', next);
+  showToast(`Tema ${next === 'dark' ? 'escuro' : 'claro'} ativado`, 'success');
+}
+
+// ==========================================
+// SISTEMA DE TOASTS
+// ==========================================
+
+function showToast(message, type = 'info') {
+  const container = document.getElementById('toast_container');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  
+  const icons = {
+    success: '✅',
+    error: '❌',
+    warning: '⚠️',
+    info: 'ℹ️'
+  };
+  
+  toast.innerHTML = `
+    <span style="font-size:1.2rem;">${icons[type]}</span>
+    <span>${message}</span>
+  `;
+  
+  container.appendChild(toast);
+  
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateX(100%)';
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}
+
+// ==========================================
+// DASHBOARD
+// ==========================================
+
+async function loadDashboard() {
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+  const amanha = new Date(hoje);
+  amanha.setDate(amanha.getDate() + 1);
+  
+  // Vendas de hoje
+  const vendasHoje = await db.vendas
+    .where('data')
+    .between(hoje, amanha)
+    .toArray();
+  
+  const totalHoje = vendasHoje.reduce((s, v) => s + v.total, 0);
+  const lucroHoje = vendasHoje.reduce((s, v) => s + (v.total - v.custoTotal), 0);
+  
+  document.getElementById('dash_vendas_hoje').textContent = totalHoje.toFixed(2) + ' Mts';
+  document.getElementById('dash_lucro_hoje').textContent = lucroHoje.toFixed(2) + ' Mts';
+  
+  // Produtos com stock baixo (< 5)
+  const produtos = await db.produtos.toArray();
+  const stockBaixo = produtos.filter(p => p.stock < 5);
+  document.getElementById('dash_stock_baixo').textContent = stockBaixo.length;
+  document.getElementById('dash_total_prod').textContent = produtos.length;
+  
+  // Alertas de stock
+  const alertasDiv = document.getElementById('alertas_stock');
+  if (stockBaixo.length === 0) {
+    alertasDiv.innerHTML = '<p style="color:var(--success);">✅ Todos os produtos com stock adequado</p>';
+  } else {
+    alertasDiv.innerHTML = stockBaixo.map(p => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:0.5rem;background:#fff3e0;border-radius:8px;margin-bottom:0.5rem;">
+        <span>⚠️ ${p.nome}</span>
+        <span class="badge badge-warning">Stock: ${p.stock.toFixed(2)}</span>
+      </div>
+    `).join('');
+  }
+  
+  // Gráfico de vendas
+  await renderGraficoVendas();
+}
+
+async function renderGraficoVendas() {
+  const ctx = document.getElementById('chartVendas').getContext('2d');
+  const dias = [];
+  const valores = [];
+  
+  for (let i = 6; i >= 0; i--) {
+    const data = new Date();
+    data.setDate(data.getDate() - i);
+    data.setHours(0, 0, 0, 0);
+    const amanha = new Date(data);
+    amanha.setDate(amanha.getDate() + 1);
+    
+    const vendas = await db.vendas.where('data').between(data, amanha).toArray();
+    const total = vendas.reduce((s, v) => s + v.total, 0);
+    
+    dias.push(data.toLocaleDateString('pt-PT', { weekday: 'short' }));
+    valores.push(total);
+  }
+  
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: dias,
+      datasets: [{
+        label: 'Vendas (Mts)',
+        data: valores,
+        borderColor: '#2e7d32',
+        backgroundColor: 'rgba(46, 125, 50, 0.1)',
+        tension: 0.4,
+        fill: true
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            callback: function(value) {
+              return value + ' Mts';
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+// ==========================================
+// PONTO DE VENDA
+// ==========================================
+
+async function loadProdutosVenda() {
+  const produtos = await db.produtos.orderBy('nome').toArray();
+  window._produtosCache = produtos;
+  renderSelectProdutos(produtos);
+  
+  // Atualizar número da venda
+  const lastNum = await db.config.get('lastVendaNum');
+  document.getElementById('venda_numero').textContent = '#' + String(lastNum.value).padStart(3, '0');
+}
+
+function renderSelectProdutos(produtos) {
+  const select = document.getElementById('venda_prod');
+  select.innerHTML = '<option value="">Selecione um produto...</option>' +
+    produtos.map(p => {
+      const und = p.porPeso ? 'kg' : 'un';
+      return `<option value="${p.id}">${p.nome} (${und}) - ${p.preco.toFixed(2)} Mts${p.codigoBarras ? ' [' + p.codigoBarras + ']' : ''}</option>`;
+    }).join('');
+}
+
+function filtraPOS() {
+  const txt = document.getElementById('pesquisaPOS').value.toLowerCase();
+  const filtrados = window._produtosCache.filter(p => 
+    p.nome.toLowerCase().includes(txt) || 
+    (p.codigoBarras && p.codigoBarras.includes(txt))
+  );
+  renderSelectProdutos(filtrados);
+}
+
+function atualizarInfoProduto() {
+  const id = parseInt(document.getElementById('venda_prod').value);
+  if (!id) return;
+  
+  const produto = window._produtosCache.find(p => p.id === id);
+  if (!produto) return;
+  
+  const isPeso = produto.porPeso;
+  document.getElementById('grupo_qtd').style.display = isPeso ? 'none' : 'flex';
+  document.getElementById('grupo_peso').style.display = isPeso ? 'block' : 'none';
+  document.getElementById('lbl_qtd').textContent = isPeso ? 'Peso (kg)' : 'Quantidade (un)';
+  document.getElementById('venda_qtd').step = isPeso ? '0.001' : '1';
+}
+
+function ajustarQtd(delta) {
+  const input = document.getElementById('venda_qtd');
+  const atual = parseFloat(input.value) || 0;
+  const novo = Math.max(0.001, atual + delta);
+  input.value = novo.toFixed(3);
+}
+
+async function adicionarAoCarrinho() {
+  const produtoId = parseInt(document.getElementById('venda_prod').value);
+  if (!produtoId) return showToast('Selecione um produto', 'warning');
+  
+  const produto = await db.produtos.get(produtoId);
+  if (!produto) return showToast('Produto não encontrado', 'error');
+  
+  let qtd, precoTotal;
+  
+  if (produto.porPeso) {
+    const valor = parseFloat(document.getElementById('valor_peso').value);
+    if (!valor || valor <= 0) return showToast('Informe o valor válido', 'warning');
+    qtd = valor / produto.preco;
+    precoTotal = valor;
+    document.getElementById('valor_peso').value = '';
+  } else {
+    qtd = parseFloat(document.getElementById('venda_qtd').value);
+    if (!qtd || qtd <= 0) return showToast('Quantidade inválida', 'warning');
+    precoTotal = qtd * produto.preco;
+  }
+  
+  // Verificar stock (alerta apenas, não bloqueia)
+  if (produto.stock < qtd) {
+    showToast(`⚠️ Stock insuficiente! Disponível: ${produto.stock}`, 'warning');
+  }
+  
+  const itemExistente = carrinho.find(i => i.produtoId === produtoId);
+  if (itemExistente) {
+    itemExistente.qtd += qtd;
+    itemExistente.total += precoTotal;
+  } else {
+    carrinho.push({
+      produtoId,
+      nome: produto.nome,
+      qtd,
+      precoUnit: produto.preco,
+      custoUnit: produto.precoCompra,
+      total: precoTotal,
+      porPeso: produto.porPeso
+    });
+  }
+  
+  renderCarrinho();
+  showToast('Produto adicionado!', 'success');
+  
+  // Reset
+  document.getElementById('venda_prod').value = '';
+  document.getElementById('venda_qtd').value = '1';
+  atualizarInfoProduto();
+}
+
+function renderCarrinho() {
+  const container = document.getElementById('carrinho_itens');
+  
+  if (carrinho.length === 0) {
+    container.innerHTML = '<p style="text-align:center;color:var(--text-secondary);padding:2rem;">Carrinho vazio</p>';
+  } else {
+    container.innerHTML = carrinho.map((item, idx) => `
+      <div class="cart-item">
+        <div class="cart-item-info">
+          <div class="cart-item-name">${item.nome}</div>
+          <div class="cart-item-details">
+            ${item.qtd.toFixed(3)} ${item.porPeso ? 'kg' : 'un'} × ${item.precoUnit.toFixed(2)} Mts
+          </div>
+        </div>
+        <div class="cart-item-actions">
+          <strong>${item.total.toFixed(2)} Mts</strong>
+          <button class="btn btn-danger btn-icon" onclick="removerDoCarrinho(${idx})">🗑️</button>
+        </div>
+      </div>
+    `).join('');
+  }
+  
+  // Totais
+  const subtotal = carrinho.reduce((s, i) => s + i.total, 0);
+  const custoTotal = carrinho.reduce((s, i) => s + (i.qtd * i.custoUnit), 0);
+  const lucro = subtotal - custoTotal;
+  
+  document.getElementById('cart_subtotal').textContent = subtotal.toFixed(2) + ' Mts';
+  document.getElementById('cart_total').textContent = subtotal.toFixed(2) + ' Mts';
+  document.getElementById('cart_lucro').textContent = lucro.toFixed(2) + ' Mts';
+  
+  calcularTroco();
+}
+
+function removerDoCarrinho(idx) {
+  carrinho.splice(idx, 1);
+  renderCarrinho();
+  showToast('Item removido', 'info');
+}
+
+function limparCarrinho() {
+  if (carrinho.length === 0) return;
+  if (!confirm('Limpar todo o carrinho?')) return;
+  carrinho = [];
+  renderCarrinho();
+  document.getElementById('valor_recebido').value = '';
+  document.getElementById('valor_troco').value = '0.00';
+}
+
+function calcularTroco() {
+  const total = carrinho.reduce((s, i) => s + i.total, 0);
+  const recebido = parseFloat(document.getElementById('valor_recebido').value) || 0;
+  const troco = Math.max(0, recebido - total);
+  document.getElementById('valor_troco').value = troco.toFixed(2);
+}
+
+async function finalizarVenda() {
+  if (carrinho.length === 0) return showToast('Carrinho vazio!', 'warning');
+  
+  const total = carrinho.reduce((s, i) => s + i.total, 0);
+  const custoTotal = carrinho.reduce((s, i) => s + (i.qtd * i.custoUnit), 0);
+  
+  try {
+    // Criar venda
+    const vendaId = await db.vendas.add({
+      total,
+      custoTotal,
+      data: new Date(),
+      syncStatus: 'pending'
+    });
+    
+    // Adicionar itens e atualizar stock
+    for (const item of carrinho) {
+      await db.itensVenda.add({
+        vendaId,
+        produtoId: item.produtoId,
+        qtd: item.qtd,
+        precoUnit: item.precoUnit,
+        custoUnit: item.custoUnit
+      });
+      
+      // Atualizar stock
+      const produto = await db.produtos.get(item.produtoId);
+      if (produto) {
+        await db.produtos.update(item.produtoId, {
+          stock: Math.max(0, produto.stock - item.qtd)
+        });
+      }
+    }
+    
+    // Atualizar número da venda
+    const lastNum = await db.config.get('lastVendaNum');
+    await db.config.update('lastVendaNum', { value: lastNum.value + 1 });
+    
+    // Limpar carrinho
+    carrinho = [];
+    renderCarrinho();
+    document.getElementById('valor_recebido').value = '';
+    document.getElementById('valor_troco').value = '0.00';
+    
+    showToast(`Venda #${vendaId} finalizada com sucesso!`, 'success');
+    
+    // Atualizar número exibido
+    const newNum = await db.config.get('lastVendaNum');
+    document.getElementById('venda_numero').textContent = '#' + String(newNum.value).padStart(3, '0');
+    
+  } catch (err) {
+    showToast('Erro ao finalizar venda: ' + err.message, 'error');
+  }
+}
+
+// Nova função para imprimir recibo do carrinho atual (sem finalizar)
+function imprimirReciboCarrinho() {
+  if (carrinho.length === 0) {
+    showToast('Carrinho vazio', 'warning');
+    return;
+  }
+  
+  const total = carrinho.reduce((s, i) => s + i.total, 0);
+  const recebido = parseFloat(document.getElementById('valor_recebido').value) || total;
+  const troco = Math.max(0, recebido - total);
+  
+  const itens = carrinho.map(i => 
+    `${i.nome}\n${i.qtd.toFixed(3)} ${i.porPeso ? 'kg' : 'un'} × ${i.precoUnit.toFixed(2)} = ${i.total.toFixed(2)} Mts`
+  ).join('\n\n');
+  
+  const recibo = `
+================================
+      MERCEARIA GESTÃO PRO
+================================
+Recibo Provisório
+Data: ${new Date().toLocaleString('pt-PT')}
+
+${itens}
+
+--------------------------------
+TOTAL: ${total.toFixed(2)} Mts
+Recebido: ${recebido.toFixed(2)} Mts
+TROCO: ${troco.toFixed(2)} Mts
+================================
+Obrigado pela preferência!
+================================
+  `;
+  
+  const win = window.open('', '_blank');
+  win.document.write(`<pre style="font-family:monospace;font-size:14px;">${recibo}</pre>`);
+  win.document.close();
+  win.print();
+}
+
+// ==========================================
+// LEITOR QR/CÓDIGO DE BARRAS (CORRIGIDO)
+// ==========================================
+
+function iniciarLeitor() {
+  const container = document.getElementById('qr_container');
+  container.classList.remove('hidden');
+  
+  // Verificar se já existe uma instância e parar
+  if (html5QrCode) {
+    pararLeitor();
+  }
+  
+  html5QrCode = new Html5Qrcode("reader");
+  
+  // Configurações da câmera
+  const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+  
+  html5QrCode.start(
+    { facingMode: "environment" }, // prefere câmera traseira
+    config,
+    async (codigo) => {
+      codigo = codigo.trim();
+      if (!codigo) return;
+      
+      const produto = await db.produtos.where('codigoBarras').equals(codigo).first();
+      if (produto) {
+        document.getElementById('venda_prod').value = produto.id;
+        atualizarInfoProduto();
+        pararLeitor();
+        showToast(`Produto encontrado: ${produto.nome}`, 'success');
+      } else {
+        showToast('Produto não encontrado com este código', 'error');
+      }
+    },
+    (err) => {
+      // Erro de leitura ignorado
+    }
+  ).catch(err => {
+    showToast('Erro ao acessar câmera: ' + err.message, 'error');
+    container.classList.add('hidden');
+  });
+}
+
+function pararLeitor() {
+  if (html5QrCode) {
+    html5QrCode.stop().then(() => {
+      document.getElementById('qr_container').classList.add('hidden');
+      html5QrCode = null;
+    }).catch(() => {});
+  } else {
+    document.getElementById('qr_container').classList.add('hidden');
+  }
+}
+
+// ==========================================
+// PRODUTOS
+// ==========================================
+
+async function loadCategoriasSelect() {
+  const cats = await db.categorias.orderBy('nome').toArray();
+  const select = document.getElementById('prod_cat');
+  select.innerHTML = cats.map(c => `<option value="${c.id}">${c.nome}</option>`).join('');
+}
+
+function toggleTipoVenda() {
+  const isPeso = document.getElementById('prod_peso').checked;
+  document.getElementById('prod_stock').placeholder = isPeso ? 'Stock em kg' : 'Quantidade em unidades';
+}
+
+function gerarCodigoBarras() {
+  const codigo = '789' + Date.now().toString().slice(-9);
+  document.getElementById('prod_codigo').value = codigo;
+  showToast('Código gerado: ' + codigo, 'success');
+}
+
+async function salvarProduto() {
+  const id = document.getElementById('prod_id').value;
+  const dados = {
+    nome: document.getElementById('prod_nome').value.trim(),
+    categoriaId: parseInt(document.getElementById('prod_cat').value),
+    precoCompra: parseFloat(document.getElementById('prod_preco_compra').value) || 0,
+    preco: parseFloat(document.getElementById('prod_preco').value) || 0,
+    stock: parseFloat(document.getElementById('prod_stock').value) || 0,
+    porPeso: document.getElementById('prod_peso').checked,
+    codigoBarras: document.getElementById('prod_codigo').value.trim()
+  };
+  
+  if (!dados.nome) return showToast('Nome é obrigatório', 'warning');
+  if (!dados.categoriaId) return showToast('Categoria é obrigatória', 'warning');
+  if (dados.preco <= 0) return showToast('Preço de venda deve ser maior que zero', 'warning');
+  
+  // Verificar código de barras único
+  if (dados.codigoBarras) {
+    const existe = await db.produtos.where('codigoBarras').equals(dados.codigoBarras).first();
+    if (existe && (!id || existe.id != id)) {
+      return showToast('Código de barras já cadastrado!', 'error');
+    }
+  }
+  
+  try {
+    if (id) {
+      await db.produtos.update(parseInt(id), dados);
+      showToast('Produto atualizado!', 'success');
+    } else {
+      await db.produtos.add(dados);
+      showToast('Produto cadastrado!', 'success');
+    }
+    limparFormProduto();
+    listarProdutos();
+  } catch (err) {
+    showToast('Erro: ' + err.message, 'error');
+  }
+}
+
+function limparFormProduto() {
+  document.getElementById('prod_id').value = '';
+  document.getElementById('prod_nome').value = '';
+  document.getElementById('prod_preco_compra').value = '';
+  document.getElementById('prod_preco').value = '';
+  document.getElementById('prod_stock').value = '';
+  document.getElementById('prod_codigo').value = '';
+  document.getElementById('prod_peso').checked = false;
+  toggleTipoVenda();
+}
+
+async function listarProdutos() {
+  const produtos = await db.produtos.orderBy('nome').toArray();
+  const categorias = await db.categorias.toArray();
+  const catMap = Object.fromEntries(categorias.map(c => [c.id, c.nome]));
+  
+  const tbody = document.querySelector('#table_prod tbody');
+  tbody.innerHTML = produtos.map(p => {
+    const stockClass = p.stock < 5 ? 'badge-danger' : 'badge-success';
+    return `
+      <tr>
+        <td>
+          <strong>${p.nome}</strong>
+          ${p.codigoBarras ? `<br><small style="color:var(--text-secondary);">📷 ${p.codigoBarras}</small>` : ''}
+        </td>
+        <td>${catMap[p.categoriaId] || '—'}</td>
+        <td>${p.preco.toFixed(2)} Mts</td>
+        <td><span class="badge ${stockClass}">${p.stock.toFixed(2)} ${p.porPeso ? 'kg' : 'un'}</span></td>
+        <td>
+          <button class="btn btn-icon" onclick="editarProduto(${p.id})" title="Editar">✏️</button>
+          <button class="btn btn-icon" onclick="excluirProduto(${p.id})" title="Excluir">🗑️</button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function filtrarProdutos() {
+  const txt = document.getElementById('filtro_prod').value.toLowerCase();
+  const rows = document.querySelectorAll('#table_prod tbody tr');
+  rows.forEach(row => {
+    const text = row.textContent.toLowerCase();
+    row.style.display = text.includes(txt) ? '' : 'none';
+  });
+}
+
+async function editarProduto(id) {
+  const p = await db.produtos.get(id);
+  document.getElementById('prod_id').value = p.id;
+  document.getElementById('prod_nome').value = p.nome;
+  document.getElementById('prod_cat').value = p.categoriaId;
+  document.getElementById('prod_preco_compra').value = p.precoCompra;
+  document.getElementById('prod_preco').value = p.preco;
+  document.getElementById('prod_stock').value = p.stock;
+  document.getElementById('prod_codigo').value = p.codigoBarras || '';
+  document.getElementById('prod_peso').checked = p.porPeso;
+  toggleTipoVenda();
+  showToast('Modo edição ativado', 'info');
+}
+
+async function excluirProduto(id) {
+  if (!confirm('Tem certeza? Esta ação não pode ser desfeita!')) return;
+  await db.produtos.delete(id);
+  listarProdutos();
+  showToast('Produto excluído', 'success');
+}
+
+// ==========================================
+// CATEGORIAS
+// ==========================================
+
+async function salvarCategoria() {
+  const nome = document.getElementById('cat_nome').value.trim();
+  if (!nome) return showToast('Informe o nome da categoria', 'warning');
+  
+  await db.categorias.add({ nome });
+  document.getElementById('cat_nome').value = '';
+  listarCategorias();
+  showToast('Categoria adicionada!', 'success');
+}
+
+async function listarCategorias() {
+  const cats = await db.categorias.orderBy('nome').toArray();
+  const produtos = await db.produtos.toArray();
+  
+  const countMap = {};
+  produtos.forEach(p => {
+    countMap[p.categoriaId] = (countMap[p.categoriaId] || 0) + 1;
+  });
+  
+  const tbody = document.querySelector('#table_cat tbody');
+  tbody.innerHTML = cats.map(c => `
+    <tr>
+      <td>${c.nome}</td>
+      <td>${countMap[c.id] || 0} produtos</td>
+      <td>
+        <button class="btn btn-icon" onclick="excluirCategoria(${c.id})">🗑️</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+async function excluirCategoria(id) {
+  const produtos = await db.produtos.where('categoriaId').equals(id).count();
+  if (produtos > 0) {
+    return showToast(`Não é possível excluir: existem ${produtos} produtos nesta categoria`, 'error');
+  }
+  await db.categorias.delete(id);
+  listarCategorias();
+  showToast('Categoria excluída', 'success');
+}
+
+// ==========================================
+// RELATÓRIOS
+// ==========================================
+
+document.getElementById('rel_periodo').addEventListener('change', function() {
+  const isCustom = this.value === 'custom';
+  document.getElementById('grupo_data_inicio').style.display = isCustom ? 'block' : 'none';
+  document.getElementById('grupo_data_fim').style.display = isCustom ? 'block' : 'none';
+});
+
+async function gerarRelatorio() {
+  const periodo = document.getElementById('rel_periodo').value;
+  let dataInicio, dataFim;
+  
+  if (periodo === 'custom') {
+    dataInicio = new Date(document.getElementById('rel_data_inicio').value);
+    dataFim = new Date(document.getElementById('rel_data_fim').value);
+    dataFim.setDate(dataFim.getDate() + 1);
+  } else {
+    dataFim = new Date();
+    dataInicio = new Date();
+    dataInicio.setDate(dataInicio.getDate() - parseInt(periodo));
+  }
+  
+  const vendas = await db.vendas.where('data').between(dataInicio, dataFim).toArray();
+  const totalVendas = vendas.reduce((s, v) => s + v.total, 0);
+  const totalLucro = vendas.reduce((s, v) => s + (v.total - v.custoTotal), 0);
+  
+  // Agrupar por dia
+  const porDia = {};
+  vendas.forEach(v => {
+    const dia = v.data.toISOString().split('T')[0];
+    if (!porDia[dia]) porDia[dia] = { vendas: 0, lucro: 0, count: 0 };
+    porDia[dia].vendas += v.total;
+    porDia[dia].lucro += (v.total - v.custoTotal);
+    porDia[dia].count++;
+  });
+  
+  const diasOrdenados = Object.entries(porDia).sort((a, b) => a[0].localeCompare(b[0]));
+  
+  document.getElementById('relatorio_conteudo').innerHTML = `
+    <div class="stats-grid" style="margin-bottom:1rem;">
+      <div class="stat-card">
+        <div class="stat-label">Total em Vendas</div>
+        <div class="stat-value">${totalVendas.toFixed(2)} Mts</div>
+      </div>
+      <div class="stat-card" style="border-left-color:var(--success);">
+        <div class="stat-label">Lucro Líquido</div>
+        <div class="stat-value" style="color:var(--success);">${totalLucro.toFixed(2)} Mts</div>
+      </div>
+      <div class="stat-card" style="border-left-color:var(--accent);">
+        <div class="stat-label">Ticket Médio</div>
+        <div class="stat-value" style="color:var(--accent);">
+          ${vendas.length ? (totalVendas / vendas.length).toFixed(2) : '0.00'} Mts
+        </div>
+      </div>
+      <div class="stat-card" style="border-left-color:#2196f3;">
+        <div class="stat-label">Total de Vendas</div>
+        <div class="stat-value" style="color:#2196f3;">${vendas.length}</div>
+      </div>
+    </div>
+    
+    <div class="table-container">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Vendas</th>
+            <th>Total (Mts)</th>
+            <th>Lucro (Mts)</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${diasOrdenados.map(([dia, vals]) => `
+            <tr>
+              <td>${new Date(dia).toLocaleDateString('pt-PT')}</td>
+              <td>${vals.count}</td>
+              <td>${vals.vendas.toFixed(2)}</td>
+              <td style="color:var(--success);font-weight:600;">${vals.lucro.toFixed(2)}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+  
+  // Ranking de produtos
+  const itens = await db.itensVenda.toArray();
+  const prodRanking = {};
+  
+  for (const item of itens) {
+    const venda = await db.vendas.get(item.vendaId);
+    if (venda && venda.data >= dataInicio && venda.data <= dataFim) {
+      if (!prodRanking[item.produtoId]) {
+        prodRanking[item.produtoId] = { qtd: 0, total: 0 };
+      }
+      prodRanking[item.produtoId].qtd += item.qtd;
+      prodRanking[item.produtoId].total += item.qtd * item.precoUnit;
+    }
+  }
+  
+  const produtos = await db.produtos.toArray();
+  const rankingArray = Object.entries(prodRanking)
+    .map(([id, vals]) => ({
+      nome: produtos.find(p => p.id == id)?.nome || 'Desconhecido',
+      ...vals
+    }))
+    .sort((a, b) => b.total - a.total)
+    .slice(0, 10);
+  
+  document.getElementById('ranking_produtos').innerHTML = rankingArray.length ? `
+    <div class="table-container">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Produto</th>
+            <th>Qtd Vendida</th>
+            <th>Total (Mts)</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rankingArray.map((p, i) => `
+            <tr>
+              <td>${i + 1}</td>
+              <td><strong>${p.nome}</strong></td>
+              <td>${p.qtd.toFixed(2)}</td>
+              <td>${p.total.toFixed(2)}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  ` : '<p style="text-align:center;color:var(--text-secondary);">Nenhuma venda no período</p>';
+}
+
+async function confirmarApagarHistorico() {
+  if (!confirm('⚠️ ATENÇÃO!\n\nIsso apagará TODO o histórico de vendas permanentemente.\n\nTem certeza absoluta?')) return;
+  
+  if (!confirm('Última confirmação: Deseja realmente apagar todas as vendas?')) return;
+  
+  await db.vendas.clear();
+  await db.itensVenda.clear();
+  showToast('Histórico apagado completamente', 'success');
+  gerarRelatorio();
+}
+
+// ==========================================
+// BACKUP E EXPORTAÇÃO
+// ==========================================
+
+function showBackupModal() {
+  document.getElementById('modal_backup').classList.add('active');
+}
+
+function closeBackupModal() {
+  document.getElementById('modal_backup').classList.remove('active');
+}
+
+async function exportarBackup() {
+  const data = {
+    versao: APP_VERSION,
+    dataExportacao: new Date().toISOString(),
+    categorias: await db.categorias.toArray(),
+    produtos: await db.produtos.toArray(),
+    vendas: await db.vendas.toArray(),
+    itensVenda: await db.itensVenda.toArray(),
+    config: await db.config.toArray()
+  };
+  
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `mercearia_backup_${new Date().toISOString().split('T')[0]}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  
+  showToast('Backup exportado com sucesso!', 'success');
+}
+
+async function exportarExcelCompleto() {
+  const wb = XLSX.utils.book_new();
+  
+  // Produtos
+  const produtos = await db.produtos.toArray();
+  const cats = await db.categorias.toArray();
+  const catMap = Object.fromEntries(cats.map(c => [c.id, c.nome]));
+  
+  const wsProd = XLSX.utils.json_to_sheet(produtos.map(p => ({
+    Nome: p.nome,
+    Categoria: catMap[p.categoriaId] || '',
+    'Preço Compra': p.precoCompra,
+    'Preço Venda': p.preco,
+    Stock: p.stock,
+    Unidade: p.porPeso ? 'kg' : 'un',
+    'Código Barras': p.codigoBarras || ''
+  })));
+  XLSX.utils.book_append_sheet(wb, wsProd, 'Produtos');
+  
+  // Vendas
+  const vendas = await db.vendas.toArray();
+  const wsVendas = XLSX.utils.json_to_sheet(vendas.map(v => ({
+    ID: v.id,
+    Data: v.data,
+    Total: v.total,
+    Lucro: v.total - v.custoTotal
+  })));
+  XLSX.utils.book_append_sheet(wb, wsVendas, 'Vendas');
+  
+  XLSX.writeFile(wb, `mercearia_relatorio_${new Date().toISOString().split('T')[0]}.xlsx`);
+  showToast('Excel exportado!', 'success');
+}
+
+async function importarBackup() {
+  const file = document.getElementById('input_backup').files[0];
+  if (!file) return;
+  
+  try {
+    const text = await file.text();
+    const data = JSON.parse(text);
+    
+    if (!confirm(`Restaurar backup de ${data.dataExportacao}?\n\nIsso substituirá TODOS os dados atuais!`)) return;
+    
+    // Limpar e restaurar
+    await db.categorias.clear();
+    await db.produtos.clear();
+    await db.vendas.clear();
+    await db.itensVenda.clear();
+    await db.config.clear();
+    
+    if (data.categorias) await db.categorias.bulkAdd(data.categorias);
+    if (data.produtos) await db.produtos.bulkAdd(data.produtos);
+    if (data.vendas) await db.vendas.bulkAdd(data.vendas);
+    if (data.itensVenda) await db.itensVenda.bulkAdd(data.itensVenda);
+    if (data.config) await db.config.bulkAdd(data.config);
+    
+    showToast('Backup restaurado com sucesso! Recarregando...', 'success');
+    setTimeout(() => location.reload(), 1500);
+    
+  } catch (err) {
+    showToast('Erro ao importar: ' + err.message, 'error');
+  }
+}
+
+// ==========================================
+// PWA E INSTALAÇÃO
+// ==========================================
+
+// Registro Profissional do Service Worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .then(reg => console.log('PWA: Service Worker ativo para o escopo:', reg.scope))
+      .catch(err => console.error('PWA: Falha ao registrar SW:', err));
+  });
+}
+
+// Link para o Manifesto (adicione isso dentro da tag <head>)
+// <link rel="manifest" href="manifest.json">
+
+
+// ==========================================
+// INICIALIZAÇÃO
+// ==========================================
+
+document.addEventListener('DOMContentLoaded', async () => {
+  // Carregar tema salvo
+  const savedTheme = localStorage.getItem('theme') || 'light';
+  document.documentElement.setAttribute('data-theme', savedTheme);
+  
+  // Inicializar DB
+  await initDB();
+  
+  // Carregar dashboard inicial
+  showPage('dashboard');
+  
+  // Verificar se é primeira execução
+  const config = await db.config.get('initialized');
+  if (!config) {
+    // Adicionar categorias padrão
+    await db.categorias.add({ nome: 'Alimentos' });
+    await db.categorias.add({ nome: 'Bebidas' });
+    await db.categorias.add({ nome: 'Limpeza' });
+    await db.categorias.add({ nome: 'Higiene' });
+    await db.config.put({ key: 'initialized', value: true });
+    showToast('Bem-vindo! Categorias padrão criadas.', 'success');
+  }
+  
+  console.log('Mercearia Gestão Pro v' + APP_VERSION + ' iniciada');
+});
+</script>
+</body>
+</html>
